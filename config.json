@@ -1,0 +1,10 @@
+{
+	"mastodon_server": "REPLACE WITH MASTODON SERVER URL",
+	"mastodon_client_id": "REPLACE WITH MASTODON CLIENT ID",
+	"mastodon_secret": "REPLACE WITH MASTODON SECRET",
+	"mastodon_token": "REPLACE WITH MASTODON LOGIN TOKEN",
+	"lfm_username": "REPLACE WITH LAST.FM USERNAME",
+	"lfm_api_key": "REPLACE WITH LAST.FM API KEY",
+	"poll_rate": 30,
+	"test_mode": false
+}
