@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/mattn/go-mastodon"
+
+	"mastofm-bot/internal/lastfm"
+	mastoUtil "mastofm-bot/internal/mastodon"
+
 )
 
 // Configuration data
@@ -27,64 +28,9 @@ type Config struct {
 	TestMode         bool   `json:"test_mode"`
 }
 
-// Track data
-type lfmTrack struct {
-	Name   string `json:"name"`
-	Artist struct {
-		Text string `json:"#text"`
-	} `json:"artist"`
-	Album struct {
-		Text string `json:"#text"`
-	} `json:"album"`
-	Date struct {
-		UTS string `json:"uts"`
-	} `json:"date"`
-}
-
 // Last timestamp, for persistence
 type LastUTS struct {
 	LastUTS string `json:"last_uts"`
-}
-
-// Fetch all recent tracks from Last.fm, return an lfmTrack struct
-func lfmGetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*lfmTrack, error) {
-	url := "https://ws.audioscrobbler.com/2.0" +
-		"?method=user.getRecentTracks" +
-		"&user=" + lfmUsername +
-		"&api_key=" + lfmApiKey +
-		"&format=json&limit=1"
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close() //nolint:errcheck
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("last.fm returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var parsed struct {
-		RecentTracks struct {
-			Track []lfmTrack `json:"track"`
-		} `json:"recenttracks"`
-	}
-	if err := json.Unmarshal(body, &parsed); err != nil {
-		return nil, err
-	}
-	if len(parsed.RecentTracks.Track) == 0 {
-		return nil, fmt.Errorf("last.fm returned no tracks")
-	}
-	return &parsed.RecentTracks.Track[0], nil
 }
 
 // Loading/writing the persistence file (for idempotency)
@@ -93,14 +39,12 @@ func loadLastUTS(filename string) (LastUTS, error) {
 
 	file, err := os.Open(filename)
 	if err != nil {
-		log.Printf("Could not open persist file: %v", err)
 		return LastUTS{}, err
 	}
 	defer file.Close() //nolint:errcheck
 
 	err = json.NewDecoder(file).Decode(&lastuts)
 	if err != nil {
-		log.Printf("Error: Unable to decode persist file: %v", err)
 		return LastUTS{}, err
 	}
 
@@ -138,7 +82,7 @@ func loadConfig(filename string) Config {
 }
 
 // Deduplication of tracks
-func isNewTrack(track *lfmTrack, lastuts LastUTS) bool {
+func isNewTrack(track *lastfm.Track, lastuts LastUTS) bool {
 
 	if track == nil {
 		return false
@@ -149,29 +93,6 @@ func isNewTrack(track *lfmTrack, lastuts LastUTS) bool {
 	}
 
 	return track.Date.UTS != lastuts.LastUTS
-}
-
-// Mastodon post format
-
-func formatPost(track *lfmTrack) mastodon.Toot {
-
-	if track.Album.Text != "" {
-		post := "🎵 Now listening\n" + 
-			track.Artist.Text + " - " + track.Name +
-			"\n 📀 " + track.Album.Text
-		toot := mastodon.Toot{
-			Status: post,
-		}
-		return toot
-	}
-	// Sometimes album is missing.
-	post := "🎵 Now listening\n" + 
-		track.Artist.Text + " - " + track.Name +
-		"\n 📀 Unknown Album"
-	toot := mastodon.Toot{
-		Status: post,
-	}
-	return toot
 }
 
 func main() {
@@ -222,7 +143,7 @@ func main() {
 			return
 		case <-pollTicker.C:
 			// Retrieve newest track
-			track, err := lfmGetRecentTrack(ctx, config.LfmUsername, config.LfmApiKey)
+			track, err := lastfm.GetRecentTrack(ctx, config.LfmUsername, config.LfmApiKey)
 			if err != nil {
 				log.Printf("Error getting most recent track: %v", err)
 			}
@@ -231,7 +152,7 @@ func main() {
 				log.Printf("New track: %s - %s\n", track.Artist.Text, track.Name)
 				// Posting to Mastodon
 				if !(config.TestMode) {
-					mastoPost := formatPost(track)
+					mastoPost := mastodon.Toot{Status: mastoUtil.FormatPost(track)}
 					toot, err := mastoClient.PostStatus(ctx, &mastoPost)
 					if err != nil {
 						log.Printf("Error posting to Mastodon: %#v\n", err)
