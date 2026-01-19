@@ -8,20 +8,6 @@ import (
 	"net/http"
 )
 
-// Track data
-type Track struct {
-	Name   string `json:"name"`
-	Artist struct {
-		Text string `json:"#text"`
-	} `json:"artist"`
-	Album struct {
-		Text string `json:"#text"`
-	} `json:"album"`
-	Date struct {
-		UTS string `json:"uts"`
-	} `json:"date"`
-}
-
 // Fetch all recent tracks from Last.fm, return a Track struct
 func GetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*Track, error) {
 	url := "https://ws.audioscrobbler.com/2.0" +
@@ -62,3 +48,5 @@ func GetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*Track,
 	}
 	return &parsed.RecentTracks.Track[0], nil
 }
+
+
