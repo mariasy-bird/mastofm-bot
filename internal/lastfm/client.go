@@ -6,17 +6,22 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 // Fetch all recent tracks from Last.fm, return a Track struct
 func GetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*Track, error) {
-	url := "https://ws.audioscrobbler.com/2.0" +
-	"?method=user.getRecentTracks" +
-	"&user=" + lfmUsername +
-	"&api_key=" + lfmApiKey +
-	"&format=json&limit=1"
+	u, _ := url.Parse("https://ws.audioscrobbler.com/2.0")
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	u.RawQuery = url.Values{
+		"method": 	{"user.getRecentTracks"},
+		"user": 	{lfmUsername},
+		"api_key": 	{lfmApiKey},
+		"format": 	{"json"},
+		"limit":	{"1"},
+	}.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
