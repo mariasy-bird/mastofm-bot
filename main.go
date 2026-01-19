@@ -56,7 +56,7 @@ func lfmGetRecentTrack(lfmUsername, lfmApiKey string) (*lfmTrack, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -86,7 +86,7 @@ func loadLastUTS(filename string) (LastUTS, error) {
 		log.Printf("Could not open persist file: %v", err)
 		return LastUTS{}, err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	err = json.NewDecoder(file).Decode(&lastuts)
 	if err != nil {
@@ -103,9 +103,12 @@ func saveLastUTS(filename string, l LastUTS) {
 		log.Printf("Error when saving persist: %v", err)
 		return
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
-	json.NewEncoder(file).Encode(l)
+	err = json.NewEncoder(file).Encode(l)
+	if err != nil {
+		log.Printf("Error when encoding persist file: %v", err)
+	}
 }
 
 // Loading the config file to the config struct
@@ -114,7 +117,7 @@ func loadConfig(filename string) Config {
 	if err != nil {
 		log.Fatalf("Could not open config file: %v", err)
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	var cfg Config
 	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
@@ -176,7 +179,7 @@ func main() {
 	// Ticker for polling
 	var PollRate = time.Duration(config.PollRateSeconds) * time.Second
 	pollTicker := time.NewTicker(PollRate)
-	defer pollTicker.Stop()
+	defer pollTicker.Stop() //nolint:errcheck
 
 	// Loading persist file for dedupe
 
@@ -197,12 +200,14 @@ func main() {
 		if track != nil && isNewTrack(track, lastuts) {
 			log.Printf("New track: %s - %s\n", track.Artist.Text, track.Name)
 			// Posting to Mastodon
-			mastoPost := formatPost(track)
-			toot, err := mastoClient.PostStatus(context.Background(), &mastoPost)
-			if err != nil {
-				log.Printf("Error posting to Mastodon: %#v\n", err)
+			if !(config.TestMode) {
+				mastoPost := formatPost(track)
+				toot, err := mastoClient.PostStatus(context.Background(), &mastoPost)
+				if err != nil {
+					log.Printf("Error posting to Mastodon: %#v\n", err)
+				}
+				log.Println("Posted: ", toot.Content)
 			}
-			log.Println("Posted: ", toot.Content)
 			// Saving persistence data
 			lastuts.LastUTS = track.Date.UTS
 			saveLastUTS(persistFile, lastuts)
