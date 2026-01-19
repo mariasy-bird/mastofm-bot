@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/mattn/go-mastodon"
@@ -45,18 +47,26 @@ type LastUTS struct {
 }
 
 // Fetch all recent tracks from Last.fm, return an lfmTrack struct
-func lfmGetRecentTrack(lfmUsername, lfmApiKey string) (*lfmTrack, error) {
+func lfmGetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*lfmTrack, error) {
 	url := "https://ws.audioscrobbler.com/2.0" +
 		"?method=user.getRecentTracks" +
 		"&user=" + lfmUsername +
 		"&api_key=" + lfmApiKey +
 		"&format=json&limit=1"
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close() //nolint:errcheck
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("last.fm returned status %d", resp.StatusCode)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -129,10 +139,12 @@ func loadConfig(filename string) Config {
 
 // Deduplication of tracks
 func isNewTrack(track *lfmTrack, lastuts LastUTS) bool {
-	if track.Date.UTS == "" {
+
+	if track == nil {
 		return false
 	}
-	if track == nil {
+
+	if track.Date.UTS == "" {
 		return false
 	}
 
@@ -163,6 +175,19 @@ func formatPost(track *lfmTrack) mastodon.Toot {
 }
 
 func main() {
+	// Graceful shutdown context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		log.Println("Shutdown signal received")
+		cancel()
+	}()
+
 	// Config and dedupe location
 	config := loadConfig("config.json")
 	persistFile := "persist.json"
@@ -184,33 +209,39 @@ func main() {
 	// Loading persist file for dedupe
 
 	lastuts, err := loadLastUTS(persistFile)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		log.Printf("Error when loading persist file: %v", err)
 	}
 
 	// Main loop
 
-	for range pollTicker.C {
-		// Retrieve newest track
-		track, err := lfmGetRecentTrack(config.LfmUsername, config.LfmApiKey)
-		if err != nil {
-			log.Printf("Error getting most recent track: %v", err)
-		}
-		// If track is new
-		if track != nil && isNewTrack(track, lastuts) {
-			log.Printf("New track: %s - %s\n", track.Artist.Text, track.Name)
-			// Posting to Mastodon
-			if !(config.TestMode) {
-				mastoPost := formatPost(track)
-				toot, err := mastoClient.PostStatus(context.Background(), &mastoPost)
-				if err != nil {
-					log.Printf("Error posting to Mastodon: %#v\n", err)
-				}
-				log.Println("Posted: ", toot.Content)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Shutting down cleanly.")
+			return
+		case <-pollTicker.C:
+			// Retrieve newest track
+			track, err := lfmGetRecentTrack(ctx, config.LfmUsername, config.LfmApiKey)
+			if err != nil {
+				log.Printf("Error getting most recent track: %v", err)
 			}
-			// Saving persistence data
-			lastuts.LastUTS = track.Date.UTS
-			saveLastUTS(persistFile, lastuts)
+			// If track is new
+			if track != nil && isNewTrack(track, lastuts) {
+				log.Printf("New track: %s - %s\n", track.Artist.Text, track.Name)
+				// Posting to Mastodon
+				if !(config.TestMode) {
+					mastoPost := formatPost(track)
+					toot, err := mastoClient.PostStatus(ctx, &mastoPost)
+					if err != nil {
+						log.Printf("Error posting to Mastodon: %#v\n", err)
+					}
+					log.Println("Posted: ", toot.Content)
+				}
+				// Saving persistence data
+				lastuts.LastUTS = track.Date.UTS
+				saveLastUTS(persistFile, lastuts)
+			}
 		}
 	}
 }
