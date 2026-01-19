@@ -1,31 +1,58 @@
 # mastofm-bot
-A Go bot for scraping the most recent track posted on a given Last.FM account, and posting it to a Mastodon feed.
+A small Go daemon for scraping the most recent track posted on a given Last.FM account, and posting it to a Mastodon feed.
 
-# Configuring, Building
-
-## Configuring
-Edit the config.json file. 
-
-For the mastodon_server value, use the base URL of your instance, leading with https://, e.g. "https://mastodon.social".
-
-To get the client ID, secret, and token, on your Mastodon account, create an app in Preferences -> Development. 
-
-You will need a client ID, a secret, and an access token. The application will only need write:statuses permissions.
+This is an early-stage personal project, built to teach myself Go. Not feature-complete.
 
 
-For the lfmUsername field, substitute the placeholder with your last.fm username. 
+## Features
+- Queries Last.fm for the most recent track of a specified user
+- Maintains a persisted timestamp to deduplicate postings
+- Formats and posts "Now listening:" updates to a Mastodon account
+- Outputs journal entries, designed to run as a "set it and forget it" systemd service
 
-For the lfmApiKey field, create an API account at https://www.last.fm/api/account/create. You will only need API_KEY, no special tokens.
+---
+## Configuration
+All configuration is provided via a `config.json` file located in the same directory as the compiled binary.
+### Configuring Mastodon
+Set the following fields:
+- `mastodon_server`
+  
+  Base URL of your instance, including `https://`
+  Example: `"https://mastodon.social"`
+- `mastodon_client_id`
+- `mastodon_secret`
+- `mastodon_token`
+  
+To obtain these values:
+1. Go to **Preferences->Development** in your Mastodon profile
+2. Create a new Application, grant it **write:statuses** permission
+3. Copy the client ID, client secret, and access token value from the Application
 
+### Configuring Last.fm
+- `lfm_username`
+  
+  Your Last.fm username.
+- `lfm_api_key`
+  
+  Create an API key at: https://www.last.fm/api/account/create.
+
+  Only the API key is needed, no additional tokens.
+
+---
 ## Building
 Clone this repository:
+```bash
+git clone https://github.com/mariasy-bird/mastofm-bot
+cd mastofm-bot
 ```
-$ git clone https://github.com/mariasy-bird/mastofm-bot
-```
-Run the following commands to build the program:
-```
-$ go get mastofm-bot
-
-$ go build
+Build the binary:
+```bash
+go build
 ```
 Include your edited config.json in the same directory as your mastofm-bot executable.
+
+## Running
+You can run the bot directly in terminal:
+```bash
+./mastofm-bot
+```
