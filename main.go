@@ -79,7 +79,7 @@ func main() {
 				if imgURL != "" && config.AlbumArt {
 					imgBytes, err := mastoUtil.DownloadImage(ctx, imgURL)
 					if err == nil {
-						media,  err := mastoClient.UploadMediaFromBytes(ctx, imgBytes)
+						media, err := mastoUtil.UploadAlbumArt(ctx, mastoClient, imgBytes, track)
 						if err == nil {
 							mediaIDs = []mastodon.ID{media.ID}
 						}
@@ -88,7 +88,7 @@ func main() {
 				// Posting to Mastodon
 				if !(config.TestMode) {
 					mastoPost := mastodon.Toot{
-						Status: mastoUtil.FormatPost(track),
+						Status:   mastoUtil.FormatPost(track),
 						MediaIDs: mediaIDs,
 					}
 					toot, err := mastoClient.PostStatus(ctx, &mastoPost)

@@ -1,11 +1,14 @@
 package mastodonutil
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"mastofm-bot/internal/lastfm"
 	"net/http"
+
+	"github.com/mattn/go-mastodon"
 )
 
 func FormatPost(track *lastfm.Track) string {
@@ -43,4 +46,17 @@ func DownloadImage(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	return body, nil
+}
+
+// Create a media attachment with alt text containing track info
+func UploadAlbumArt(ctx context.Context, c *mastodon.Client, imgBytes []byte, track *lastfm.Track) (*mastodon.Attachment, error) {
+	var media mastodon.Media
+	media.File = bytes.NewReader(imgBytes)
+	media.Description = fmt.Sprintf("Album cover for %s by %s.", track.Album.Text, track.Artist.Text)
+
+	attachment, err := c.UploadMediaFromMedia(ctx, &media)
+	if err != nil {
+		return nil, err
+	}
+	return attachment, nil
 }
