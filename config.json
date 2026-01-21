@@ -6,5 +6,6 @@
 	"lfm_username": "REPLACE WITH LAST.FM USERNAME",
 	"lfm_api_key": "REPLACE WITH LAST.FM API KEY",
 	"poll_rate": 30,
-	"test_mode": false
+	"test_mode": false,
+	"album_art": true
 }

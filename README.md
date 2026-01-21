@@ -38,6 +38,15 @@ To obtain these values:
 
   Only the API key is needed, no additional tokens.
 
+### Miscellaneous Configurations
+- `test_mode`
+
+    Set this to 'true' to 'dry fire,' only log new entries and do not post anything to Mastodon.
+
+- `album_art`
+
+    Set this to 'false' to only post the track name, no album art.
+
 ---
 ## Building
 Clone this repository:

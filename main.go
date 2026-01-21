@@ -76,7 +76,7 @@ func main() {
 				// Get best track art
 				imgURL := track.BestImageURL()
 				// Download art
-				if imgURL != "" {
+				if imgURL != "" && config.AlbumArt {
 					imgBytes, err := mastoUtil.DownloadImage(ctx, imgURL)
 					if err == nil {
 						media,  err := mastoClient.UploadMediaFromBytes(ctx, imgBytes)
