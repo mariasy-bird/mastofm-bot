@@ -7,7 +7,7 @@ This is an early-stage personal project, built to teach myself Go. Not feature-c
 ## Features
 - Queries Last.fm for the most recent track of a specified user
 - Maintains a persisted timestamp to deduplicate postings
-- Formats and posts "Now listening:" updates to a Mastodon account
+- Formats and posts "Now listening:" updates to a Mastodon account, with album art.
 - Outputs journal entries, designed to run as a "set it and forget it" systemd service
 
 ---
