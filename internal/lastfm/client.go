@@ -14,11 +14,11 @@ func GetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*Track,
 	u, _ := url.Parse("https://ws.audioscrobbler.com/2.0")
 
 	u.RawQuery = url.Values{
-		"method": 	{"user.getRecentTracks"},
-		"user": 	{lfmUsername},
-		"api_key": 	{lfmApiKey},
-		"format": 	{"json"},
-		"limit":	{"1"},
+		"method":  {"user.getRecentTracks"},
+		"user":    {lfmUsername},
+		"api_key": {lfmApiKey},
+		"format":  {"json"},
+		"limit":   {"1"},
 	}.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
@@ -53,5 +53,3 @@ func GetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*Track,
 	}
 	return &parsed.RecentTracks.Track[0], nil
 }
-
-

@@ -68,12 +68,29 @@ func main() {
 			if err != nil {
 				log.Printf("Error getting most recent track: %v", err)
 			}
+
 			// If track is new
 			if track != nil && lastfm.IsNew(track, lastuts) {
 				log.Printf("New track: %s - %s\n", track.Artist.Text, track.Name)
+				var mediaIDs []mastodon.ID
+				// Get best track art
+				imgURL := track.BestImageURL()
+				// Download art
+				if imgURL != "" {
+					imgBytes, err := mastoUtil.DownloadImage(ctx, imgURL)
+					if err == nil {
+						media,  err := mastoClient.UploadMediaFromBytes(ctx, imgBytes)
+						if err == nil {
+							mediaIDs = []mastodon.ID{media.ID}
+						}
+					}
+				}
 				// Posting to Mastodon
 				if !(config.TestMode) {
-					mastoPost := mastodon.Toot{Status: mastoUtil.FormatPost(track)}
+					mastoPost := mastodon.Toot{
+						Status: mastoUtil.FormatPost(track),
+						MediaIDs: mediaIDs,
+					}
 					toot, err := mastoClient.PostStatus(ctx, &mastoPost)
 					if err != nil {
 						log.Printf("Error posting to Mastodon: %#v\n", err)
