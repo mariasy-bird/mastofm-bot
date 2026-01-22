@@ -1,13 +1,10 @@
 # mastofm-bot
 A small Go daemon for scraping the most recent track posted on a given Last.FM account, and posting it to a Mastodon feed.
 
-This is an early-stage personal project, built to teach myself Go. Not feature-complete.
-
-
 ## Features
 - Queries Last.fm for the most recent track of a specified user
 - Maintains a persisted timestamp to deduplicate postings
-- Formats and posts "Now listening:" updates to a Mastodon account, with album art.
+- Formats and posts "Now listening:" updates to a Mastodon account, with album art and (simple) alt-text
 - Outputs journal entries, designed to run as a "set it and forget it" systemd service
 
 ---
