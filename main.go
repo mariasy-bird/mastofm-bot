@@ -44,6 +44,10 @@ func main() {
 	)
 	flag.Parse()
 
+	if _, err := os.Stat(*configPath); err != nil {
+		log.Fatalf("Config file not found: %s", *configPath)
+	}
+
 	config := config.Load(*configPath)
 	persistFile := *statePath
 
