@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -31,8 +32,20 @@ func main() {
 	}()
 
 	// Config and dedupe location
-	config := config.Load("config.json")
-	persistFile := "persist.json"
+	configPath := flag.String(
+		"config",
+		"config.json",
+		"Path to config file",
+	)
+	statePath := flag.String(
+		"state",
+		"state.json",
+		"Path to persistent state file",
+	)
+	flag.Parse()
+
+	config := config.Load(*configPath)
+	persistFile := *statePath
 
 	// Mastodon client
 	mastoConfig := &mastodon.Config{

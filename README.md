@@ -62,3 +62,9 @@ You can run the bot directly in terminal:
 ```bash
 ./mastofm-bot
 ```
+
+mastofm-bot will take a flag to specify a path for the configuration file and a path to store the state file (state file keeps a record of the most recently played track, for deduplication):
+```bash
+./mastofm-bot -config "/path/to/config.json" -state "/path/to/state.json"
+```
+
