@@ -55,7 +55,6 @@ Build the binary:
 ```bash
 go build
 ```
-Include your edited config.json in the same directory as your mastofm-bot executable.
 
 ## Running
 You can run the bot directly in terminal:
