@@ -27,6 +27,11 @@ func FormatPost(track *lastfm.Track) string {
 
 // Functionality to download image, return as an array of bytes
 func DownloadImage(ctx context.Context, url string) ([]byte, error) {
+	// This logic is to detect if it's uploading null album art; the magic number is last.fm's "no album art" art
+	if strings.Contains(url, "2a96cbd8b46e442fc41c2b86b821562f") {
+    	return nil, fmt.Errorf("URL returned generic album art; not fetching album art")
+	}
+	
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
