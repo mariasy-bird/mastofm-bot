@@ -101,7 +101,11 @@ func main() {
 							mediaIDs = []mastodon.ID{media.ID}
 						}
 					}
+				if err != nil {
+                	log.Printf("Error fetching album art: %v\n", err)
+					}
 				}
+				
 				// Posting to Mastodon
 				if !(config.TestMode) {
 					mastoPost := mastodon.Toot{
@@ -110,7 +114,7 @@ func main() {
 					}
 					toot, err := mastoClient.PostStatus(ctx, &mastoPost)
 					if err != nil {
-						log.Printf("Error posting to Mastodon: %#v\n", err)
+						log.Printf("Error posting to Mastodon: %v\n", err)
 					}
 					log.Println("Posted: ", toot.Content)
 				}
