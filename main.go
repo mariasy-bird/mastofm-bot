@@ -101,8 +101,8 @@ func main() {
 							mediaIDs = []mastodon.ID{media.ID}
 						}
 					}
-				if err != nil {
-                	log.Printf("Error fetching album art: %v\n", err)
+					if err != nil {
+						log.Printf("Error fetching album art: %v\n", err)
 					}
 				}
 				

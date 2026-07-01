@@ -38,16 +38,16 @@ func IsNew(track *Track, lastuts state.LastUTS) bool {
 
 func (track *Track) BestImageURL() string {
 	var imageSize = map[string]int{
-		"small":	1,
-		"medium":	2,
-		"large":	3,
-		"extralarge":	4,
-		"mega":		5,
+		"small":      1,
+		"medium":     2,
+		"large":      3,
+		"extralarge": 4,
+		"mega":       5,
 	}
 	bestScore := -1
 	bestURL := ""
 	for _, image := range track.Image {
-		if image.URL == ""{
+		if image.URL == "" {
 			continue
 		}
 		currentScore := imageSize[image.Size]
