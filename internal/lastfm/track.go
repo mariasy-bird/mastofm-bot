@@ -1,9 +1,5 @@
 package lastfm
 
-import (
-	"mastofm-bot/internal/state"
-)
-
 // Track data
 type Track struct {
 	Name   string `json:"name"`
@@ -20,20 +16,9 @@ type Track struct {
 	Date struct {
 		UTS string `json:"uts"`
 	} `json:"date"`
-}
-
-// Deduplication of tracks
-func IsNew(track *Track, lastuts state.LastUTS) bool {
-
-	if track == nil {
-		return false
-	}
-
-	if track.Date.UTS == "" {
-		return false
-	}
-
-	return track.Date.UTS != lastuts.LastUTS
+	Attr struct {
+		Nowplaying string `json:"nowplaying"`
+	} `json:"@attr"`
 }
 
 func (track *Track) BestImageURL() string {

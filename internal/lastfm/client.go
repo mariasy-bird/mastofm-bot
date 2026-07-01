@@ -5,18 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mastofm-bot/internal/config"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // Fetch all recent tracks from Last.fm, return a Track struct
-func GetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*Track, error) {
+func GetRecentTrack(ctx context.Context, config *config.Config) (*Track, error) {
 	u, _ := url.Parse("https://ws.audioscrobbler.com/2.0")
 
 	u.RawQuery = url.Values{
 		"method":  {"user.getRecentTracks"},
-		"user":    {lfmUsername},
-		"api_key": {lfmApiKey},
+		"user":    {config.LfmUsername},
+		"api_key": {config.LfmApiKey},
 		"format":  {"json"},
 		"limit":   {"1"},
 	}.Encode()
@@ -48,6 +50,19 @@ func GetRecentTrack(ctx context.Context, lfmUsername, lfmApiKey string) (*Track,
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return nil, err
 	}
+
+	if config.IgnoreNowPlaying {
+		var FilteredTracks []Track
+		for _, track := range parsed.RecentTracks.Track {
+			nowplaying, err := strconv.ParseBool(track.Attr.Nowplaying)
+			// we don't want any now-playing tracks, so if it fails to parse then we assume it's *not* now-playing
+			if err != nil || !nowplaying {
+				FilteredTracks = append(FilteredTracks, track)
+			}
+		}
+		parsed.RecentTracks.Track = FilteredTracks
+	}
+
 	if len(parsed.RecentTracks.Track) == 0 {
 		return nil, fmt.Errorf("last.fm returned no tracks")
 	}

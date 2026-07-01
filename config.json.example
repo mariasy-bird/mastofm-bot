@@ -7,5 +7,6 @@
     "lfm_api_key": "REPLACE WITH LAST.FM API KEY",
     "poll_rate": 30,
     "test_mode": false,
-    "album_art": true
+    "album_art": true,
+    "no_nowplaying_track": false
 }
