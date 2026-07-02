@@ -16,7 +16,8 @@ type Config struct {
 	LfmApiKey        string `json:"lfm_api_key"`
 	PollRateSeconds  int    `json:"poll_rate"`
 	TestMode         bool   `json:"test_mode"`
-	AlbumArt	 bool	`json:"album_art"`
+	AlbumArt         bool   `json:"album_art"`
+	IgnoreNowPlaying bool   `json:"no_nowplaying_track"`
 }
 
 // Loading the config file to the config struct

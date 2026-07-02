@@ -44,6 +44,12 @@ To obtain these values:
 
     Set this to 'false' to only post the track name, no album art.
 
+- `no_nowplaying_track`
+
+    If your player supports the new Last.FM "nowplaying" feature (which lets you see the currently playing track and not just the most recently scrobbled one),
+    by default the bot will post the newly playing track immediately.
+    If you *don't* want this behaviour (aka: you only want to post *scrobbled* tracks), then set this to 'true'.
+
 ---
 ## Building
 Clone this repository:

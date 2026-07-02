@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -67,7 +68,7 @@ func main() {
 
 	// Loading persist file for dedupe
 
-	lastuts, err := state.Load(persistFile)
+	persistent, err := state.Load(persistFile)
 	if err != nil && !os.IsNotExist(err) {
 		log.Printf("Error when loading persist file: %v", err)
 	}
@@ -81,14 +82,34 @@ func main() {
 			return
 		case <-pollTicker.C:
 			// Retrieve newest track
-			track, err := lastfm.GetRecentTrack(ctx, config.LfmUsername, config.LfmApiKey)
+			track, err := lastfm.GetRecentTrack(ctx, &config)
 			if err != nil {
 				log.Printf("Error getting most recent track: %v", err)
 			}
 
-			// If track is new
-			if track != nil && lastfm.IsNew(track, lastuts) {
+			var currentUTS int64 = 0
+			nowplaying, err := strconv.ParseBool(track.Attr.Nowplaying)
+			if err == nil && nowplaying {
+				currentUTS = time.Now().Unix()
+			} else {
+				parsed, err := strconv.ParseInt(track.Date.UTS, 10, 64)
+				if err == nil {
+					currentUTS = parsed
+					// ignore err
+				}
+			}
+
+			if track != nil && (track.Name != persistent.Name || track.Artist.Text != persistent.ArtistName || track.Album.Text != persistent.AlbumName) && (persistent.LastUTS <= currentUTS) {
 				log.Printf("New track: %s - %s\n", track.Artist.Text, track.Name)
+				log.Printf("Current timestamp: %v\n", currentUTS)
+
+				// Saving persistence data
+				persistent.Name = track.Name
+				persistent.ArtistName = track.Artist.Text
+				persistent.AlbumName = track.Album.Text
+				persistent.LastUTS = currentUTS
+				state.Save(persistFile, persistent)
+
 				var mediaIDs []mastodon.ID
 				// Get best track art
 				imgURL := track.BestImageURL()
@@ -101,11 +122,11 @@ func main() {
 							mediaIDs = []mastodon.ID{media.ID}
 						}
 					}
-				if err != nil {
-                	log.Printf("Error fetching album art: %v\n", err)
+					if err != nil {
+						log.Printf("Error fetching album art: %v\n", err)
 					}
 				}
-				
+
 				// Posting to Mastodon
 				if !(config.TestMode) {
 					mastoPost := mastodon.Toot{
@@ -118,9 +139,6 @@ func main() {
 					}
 					log.Println("Posted: ", toot.Content)
 				}
-				// Saving persistence data
-				lastuts.LastUTS = track.Date.UTS
-				state.Save(persistFile, lastuts)
 			}
 		}
 	}
